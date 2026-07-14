@@ -1,13 +1,43 @@
 import * as React from "react"
 import { Helmet } from "react-helmet-async"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useMutation } from "@tanstack/react-query"
 
 import { Button } from "../../components/ui/Button"
 import { Input } from "../../components/ui/Input"
 import { Label } from "../../components/ui/Label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../../components/ui/Card"
+import { loginSchema, LoginFormValues } from "../../schemas/auth"
+import { authService } from "../../services/authService"
 
 export function Login() {
+  const navigate = useNavigate()
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+  })
+
+  const loginMutation = useMutation({
+    mutationFn: authService.login,
+    onSuccess: () => {
+      navigate("/dashboard")
+    },
+    onError: (error: any) => {
+      console.error("Erro no login:", error)
+      // Mostrar toast de erro na próxima iteração
+    }
+  })
+
+  const onSubmit = (data: LoginFormValues) => {
+    loginMutation.mutate(data)
+  }
+
   return (
     <>
       <Helmet>
@@ -18,7 +48,6 @@ export function Login() {
         
         <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex">
           <div className="absolute inset-0 bg-primary" />
-          {/* Background Image / Brand Area */}
           <div className="relative z-20 flex items-center text-lg font-medium">
             <Link to="/" className="text-white text-2xl font-bold">
                Angola<span className="text-secondary">Stay</span>
@@ -41,25 +70,47 @@ export function Login() {
                 Insira o seu email e palavra-passe para entrar na sua conta
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="nome@exemplo.com" />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Palavra-passe</Label>
-                  <Link
-                    to="/auth/recuperar-senha"
-                    className="text-sm font-medium text-primary hover:underline"
-                  >
-                    Esqueceu-se?
-                  </Link>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <CardContent className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="nome@exemplo.com" 
+                    {...register("email")}
+                    className={errors.email ? "border-danger" : ""}
+                  />
+                  {errors.email && (
+                    <span className="text-xs text-danger">{errors.email.message}</span>
+                  )}
                 </div>
-                <Input id="password" type="password" />
-              </div>
-              <Button className="w-full mt-2">Entrar</Button>
-            </CardContent>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Palavra-passe</Label>
+                    <Link
+                      to="/auth/recuperar-senha"
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Esqueceu-se?
+                    </Link>
+                  </div>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    {...register("password")}
+                    className={errors.password ? "border-danger" : ""}
+                  />
+                  {errors.password && (
+                    <span className="text-xs text-danger">{errors.password.message}</span>
+                  )}
+                </div>
+                <Button type="submit" className="w-full mt-2" disabled={loginMutation.isPending}>
+                  {loginMutation.isPending ? "A entrar..." : "Entrar"}
+                </Button>
+
+              </CardContent>
+            </form>
             <CardFooter className="flex flex-col items-center gap-4">
                <div className="relative w-full">
                  <div className="absolute inset-0 flex items-center">

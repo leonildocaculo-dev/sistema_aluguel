@@ -1,13 +1,32 @@
 import * as React from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Button } from "../../components/ui/Button"
 import { Input } from "../../components/ui/Input"
 import { Label } from "../../components/ui/Label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../../components/ui/Card"
+import { forgotPasswordSchema, ForgotPasswordFormValues } from "../../schemas/auth"
 
 export function ForgotPassword() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+  })
+
+  const [isSuccess, setIsSuccess] = React.useState(false)
+
+  const onSubmit = async (data: ForgotPasswordFormValues) => {
+    console.log("Valores de Recuperação:", data)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    setIsSuccess(true)
+  }
+
   return (
     <>
       <Helmet>
@@ -37,16 +56,37 @@ export function ForgotPassword() {
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold">Recuperar Conta</CardTitle>
               <CardDescription>
-                Insira o seu email. Enviaremos um link para redefinir a palavra-passe.
+                {isSuccess 
+                  ? "Verifique a sua caixa de entrada de email." 
+                  : "Insira o seu email. Enviaremos um link para redefinir a palavra-passe."}
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="nome@exemplo.com" />
-              </div>
-              <Button className="w-full mt-2">Enviar link de recuperação</Button>
-            </CardContent>
+            {!isSuccess ? (
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <CardContent className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="nome@exemplo.com" 
+                      {...register("email")}
+                      className={errors.email ? "border-danger" : ""}
+                    />
+                    {errors.email && <span className="text-xs text-danger">{errors.email.message}</span>}
+                  </div>
+                  <Button type="submit" className="w-full mt-2" disabled={isSubmitting}>
+                    {isSubmitting ? "A enviar..." : "Enviar link de recuperação"}
+                  </Button>
+                </CardContent>
+              </form>
+            ) : (
+              <CardContent>
+                <div className="p-4 bg-success/10 text-success rounded-md text-sm">
+                  Foi enviado um link de recuperação para o seu email. Por favor verifique a sua caixa de entrada e a pasta de spam.
+                </div>
+              </CardContent>
+            )}
             <CardFooter className="flex flex-col items-center gap-4">
                <div className="text-sm text-center text-muted-foreground">
                  Lembrou-se da palavra-passe?{" "}

@@ -1,13 +1,45 @@
 import * as React from "react"
 import { Helmet } from "react-helmet-async"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useMutation } from "@tanstack/react-query"
 
 import { Button } from "../../components/ui/Button"
 import { Input } from "../../components/ui/Input"
 import { Label } from "../../components/ui/Label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../../components/ui/Card"
+import { registerSchema, RegisterFormValues } from "../../schemas/auth"
+import { authService } from "../../services/authService"
 
 export function Register() {
+  const navigate = useNavigate()
+  
+  const {
+    register: formRegister,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      terms: false
+    }
+  })
+
+  const registerMutation = useMutation({
+    mutationFn: authService.register,
+    onSuccess: () => {
+      navigate("/dashboard") // Redireciona logo para dashboard após registo e login automático
+    },
+    onError: (error: any) => {
+      console.error("Erro no registo:", error)
+    }
+  })
+
+  const onSubmit = (data: RegisterFormValues) => {
+    registerMutation.mutate(data)
+  }
+
   return (
     <>
       <Helmet>
@@ -40,34 +72,70 @@ export function Register() {
                 Preencha os campos abaixo para criar a sua conta
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Nome completo</Label>
-                <Input id="name" type="text" placeholder="João Silva" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="nome@exemplo.com" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Palavra-passe</Label>
-                <Input id="password" type="password" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirmar Palavra-passe</Label>
-                <Input id="confirmPassword" type="password" />
-              </div>
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" id="terms" className="rounded border-gray-300 text-primary focus:ring-primary" />
-                <label
-                  htmlFor="terms"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Aceito os termos e condições
-                </label>
-              </div>
-              <Button className="w-full mt-2">Criar conta</Button>
-            </CardContent>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <CardContent className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Nome completo</Label>
+                  <Input 
+                    id="name" 
+                    type="text" 
+                    placeholder="João Silva" 
+                    {...formRegister("name")}
+                    className={errors.name ? "border-danger" : ""}
+                  />
+                  {errors.name && <span className="text-xs text-danger">{errors.name.message}</span>}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="nome@exemplo.com" 
+                    {...formRegister("email")}
+                    className={errors.email ? "border-danger" : ""}
+                  />
+                  {errors.email && <span className="text-xs text-danger">{errors.email.message}</span>}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Palavra-passe</Label>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    {...formRegister("password")}
+                    className={errors.password ? "border-danger" : ""}
+                  />
+                  {errors.password && <span className="text-xs text-danger">{errors.password.message}</span>}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="confirmPassword">Confirmar Palavra-passe</Label>
+                  <Input 
+                    id="confirmPassword" 
+                    type="password" 
+                    {...formRegister("confirmPassword")}
+                    className={errors.confirmPassword ? "border-danger" : ""}
+                  />
+                  {errors.confirmPassword && <span className="text-xs text-danger">{errors.confirmPassword.message}</span>}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    id="terms" 
+                    {...formRegister("terms")}
+                    className="rounded border-gray-300 text-primary focus:ring-primary" 
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Aceito os termos e condições
+                  </label>
+                </div>
+                {errors.terms && <span className="text-xs text-danger">{errors.terms.message}</span>}
+                <Button type="submit" className="w-full mt-2" disabled={registerMutation.isPending}>
+                  {registerMutation.isPending ? "A criar conta..." : "Criar conta"}
+                </Button>
+              </CardContent>
+            </form>
             <CardFooter className="flex flex-col items-center gap-4">
                <div className="text-sm text-center text-muted-foreground">
                  Já tem uma conta?{" "}

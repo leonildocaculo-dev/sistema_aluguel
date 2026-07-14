@@ -1,7 +1,10 @@
 import * as React from "react"
 import { Helmet } from "react-helmet-async"
+import { useQuery } from "@tanstack/react-query"
+import { propertyService } from "../services/propertyService"
 import { HeroSearchBar } from "../components/search/HeroSearchBar"
 import { PropertyCard } from "../components/cards/PropertyCard"
+import { Skeleton } from "../components/ui/Skeleton"
 
 // Dummy data for MVP visual setup
 const dummyProperties = [
@@ -46,6 +49,15 @@ const dummyProperties = [
 ]
 
 export function Home() {
+  const { data: properties, isLoading, isError } = useQuery({
+    queryKey: ['featuredProperties'],
+    queryFn: propertyService.getFeaturedProperties,
+    retry: 1
+  })
+
+  // Use API data if available, fallback to dummy data for UI display if backend fails
+  const displayProperties = properties && properties.length > 0 ? properties : dummyProperties
+
   return (
     <>
       <Helmet>
@@ -143,9 +155,33 @@ export function Home() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {dummyProperties.map((prop) => (
-                <PropertyCard key={prop.id} {...prop} />
-              ))}
+              {isLoading ? (
+                Array(4).fill(0).map((_, i) => (
+                  <div key={i} className="flex flex-col gap-3">
+                    <Skeleton className="h-[200px] w-full rounded-xl" />
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <div className="flex justify-between mt-4">
+                      <Skeleton className="h-6 w-1/3" />
+                      <Skeleton className="h-8 w-24 rounded-full" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                displayProperties.map((prop: any) => (
+                  <PropertyCard 
+                    key={prop.id}
+                    id={prop.id}
+                    title={prop.title}
+                    location={prop.location || prop.address || 'Angola'}
+                    price={prop.base_price || prop.price}
+                    oldPrice={prop.oldPrice}
+                    rating={prop.rating || 4.5}
+                    reviews={prop.reviews || 0}
+                    imageUrl={prop.images?.[0]?.url || prop.imageUrl || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800"}
+                  />
+                ))
+              )}
             </div>
           </div>
         </section>
