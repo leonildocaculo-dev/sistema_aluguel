@@ -12,9 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { loginSchema } from "../../schemas/auth"
 import type { LoginFormValues } from "../../schemas/auth"
 import { authService } from "../../services/authService"
+import { useAuthStore } from "../../stores/authStore"
 
 export function Login() {
   const navigate = useNavigate()
+  const { setAuth } = useAuthStore()
   
   const {
     register,
@@ -26,8 +28,13 @@ export function Login() {
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
-    onSuccess: () => {
-      navigate("/dashboard")
+    onSuccess: (data: any) => {
+      if (data.user && data.token) {
+        setAuth(data.user, data.token)
+        if (data.user.role_id === 1) navigate('/admin')
+        else if (data.user.role_id === 2) navigate('/owner')
+        else navigate('/dashboard')
+      }
     },
     onError: (error: any) => {
       console.error("Erro no login:", error)

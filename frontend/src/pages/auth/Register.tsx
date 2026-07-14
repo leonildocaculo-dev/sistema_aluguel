@@ -12,9 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { registerSchema } from "../../schemas/auth"
 import type { RegisterFormValues } from "../../schemas/auth"
 import { authService } from "../../services/authService"
+import { useAuthStore } from "../../stores/authStore"
 
 export function Register() {
   const navigate = useNavigate()
+  const { setAuth } = useAuthStore()
   
   const {
     register: formRegister,
@@ -29,8 +31,13 @@ export function Register() {
 
   const registerMutation = useMutation({
     mutationFn: authService.register,
-    onSuccess: () => {
-      navigate("/dashboard") // Redireciona logo para dashboard após registo e login automático
+    onSuccess: (data: any) => {
+      if (data.user && data.token) {
+        setAuth(data.user, data.token)
+        if (data.user.role_id === 1) navigate('/admin')
+        else if (data.user.role_id === 2) navigate('/owner')
+        else navigate('/dashboard')
+      }
     },
     onError: (error: any) => {
       console.error("Erro no registo:", error)
