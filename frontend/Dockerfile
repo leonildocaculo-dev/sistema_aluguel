@@ -1,17 +1,19 @@
-FROM node:20-alpine
-
+# Build stage
+FROM node:20-alpine as build
 WORKDIR /app
 
-# Ajustar permissões e instalar ferramentas necessárias
-RUN apk add --no-cache libc6-compat
-
-# Copiar package.json (será preenchido pelo volume no dev, mas deixamos aqui como base)
+# Instalar dependências
 COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Evitar instalar no Dockerfile se estivermos a usar volumes para node_modules em dev,
-# mas para ter um fallback:
-RUN npm install
+# Construir a app
+COPY . .
+RUN npm run build
 
-EXPOSE 5173
+# Serve stage
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-CMD ["npm", "run", "dev", "--", "--host"]
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

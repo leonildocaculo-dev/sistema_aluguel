@@ -1,35 +1,32 @@
-FROM php:8.3-fpm-alpine
+FROM serversideup/php:8.3-fpm-nginx
 
-# Instalar dependências de sistema
-RUN apk add --no-cache \
-    postgresql-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    git \
-    curl \
-    nginx \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    icu-dev
+# Mudar para o utilizador root temporariamente para instalar pacotes adicionais, se necessário
+USER root
 
-# Instalar extensões PHP
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql pgsql zip gd intl opcache
+# Instalar dependências de sistema para o Laravel/PostgreSQL
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instalar Redis extension
-RUN apk add --no-cache pcre-dev $PHPIZE_DEPS \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && apk del $PHPIZE_DEPS
+# Configurar variáveis de ambiente do servidor web
+ENV WEB_DOCUMENT_ROOT=/var/www/html/public
+ENV PHP_OPCACHE_ENABLE=1
 
-# Copiar Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Voltar para o utilizador web
+USER www-data
 
-WORKDIR /var/www/html
+# Copiar os ficheiros do projeto
+COPY --chown=www-data:www-data . /var/www/html
 
-# Ajustar permissões
-RUN chown -R www-data:www-data /var/www/html
+# Instalar dependências PHP
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-CMD ["php-fpm"]
+# Executar comandos de otimização do Laravel
+RUN php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache
+
+# Expor a porta 8080 (usada por omissão na imagem serversideup)
+EXPOSE 8080
