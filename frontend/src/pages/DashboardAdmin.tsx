@@ -21,7 +21,7 @@ interface Payment {
   reservation: { id: number; accommodation: { property: { name: string } }; user: { name: string } };
 }
 
-export default function DashboardAdmin() {
+export function DashboardAdmin() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'properties' | 'payments'>('properties');

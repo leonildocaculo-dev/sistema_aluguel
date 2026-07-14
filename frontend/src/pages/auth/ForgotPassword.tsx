@@ -8,7 +8,8 @@ import { Button } from "../../components/ui/Button"
 import { Input } from "../../components/ui/Input"
 import { Label } from "../../components/ui/Label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../../components/ui/Card"
-import { forgotPasswordSchema, ForgotPasswordFormValues } from "../../schemas/auth"
+import { forgotPasswordSchema } from "../../schemas/auth"
+import type { ForgotPasswordFormValues } from "../../schemas/auth"
 
 export function ForgotPassword() {
   const {

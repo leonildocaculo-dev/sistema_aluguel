@@ -9,7 +9,8 @@ import { Button } from "../../components/ui/Button"
 import { Input } from "../../components/ui/Input"
 import { Label } from "../../components/ui/Label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../../components/ui/Card"
-import { loginSchema, LoginFormValues } from "../../schemas/auth"
+import { loginSchema } from "../../schemas/auth"
+import type { LoginFormValues } from "../../schemas/auth"
 import { authService } from "../../services/authService"
 
 export function Login() {

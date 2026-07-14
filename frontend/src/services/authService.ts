@@ -1,5 +1,5 @@
 import { api } from "./api"
-import { LoginFormValues, RegisterFormValues } from "../schemas/auth"
+import type { LoginFormValues, RegisterFormValues } from "../schemas/auth"
 
 export const authService = {
   async login(data: LoginFormValues) {

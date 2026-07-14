@@ -2,8 +2,8 @@ import * as React from "react"
 import { Helmet } from "react-helmet-async"
 import { MapPin, Star, Share, Heart, Check, Wifi, Car, Coffee, Wind } from "lucide-react"
 
-import { Button } from "../ui/Button"
-import { Card, CardContent } from "../ui/Card"
+import { Button } from "../components/ui/Button"
+import { Card, CardContent } from "../components/ui/Card"
 
 // Dummy data for visual setup
 const property = {

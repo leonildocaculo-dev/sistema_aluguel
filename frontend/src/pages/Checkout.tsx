@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { ArrowLeft, CheckCircle2, Loader2, CreditCard, Landmark, QrCode } from 'lucide-react';
 
-export default function Checkout() {
+export function Checkout() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [property, setProperty] = useState<any>(null);

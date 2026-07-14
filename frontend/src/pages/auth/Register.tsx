@@ -1,4 +1,4 @@
-import * as React from "react"
+
 import { Helmet } from "react-helmet-async"
 import { Link, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
@@ -9,7 +9,8 @@ import { Button } from "../../components/ui/Button"
 import { Input } from "../../components/ui/Input"
 import { Label } from "../../components/ui/Label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../../components/ui/Card"
-import { registerSchema, RegisterFormValues } from "../../schemas/auth"
+import { registerSchema } from "../../schemas/auth"
+import type { RegisterFormValues } from "../../schemas/auth"
 import { authService } from "../../services/authService"
 
 export function Register() {
