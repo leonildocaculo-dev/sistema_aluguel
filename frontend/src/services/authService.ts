@@ -5,17 +5,20 @@ export const authService = {
   async login(data: LoginFormValues) {
     // Para Sanctum SPA authentication, primeiro chamamos o CSRF cookie endpoint
     await api.get('/sanctum/csrf-cookie', { baseURL: 'http://localhost:8000' })
-    const response = await api.post('/api/login', data)
+    const response = await api.post('/login', data)
     
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token)
+    if (response.data.access_token) {
+      localStorage.setItem('auth_token', response.data.access_token)
     }
-    return response.data
+    return {
+      user: response.data.user,
+      token: response.data.access_token
+    }
   },
 
   async register(data: RegisterFormValues) {
     await api.get('/sanctum/csrf-cookie', { baseURL: 'http://localhost:8000' })
-    const response = await api.post('/api/register', {
+    const response = await api.post('/register', {
       name: data.name,
       email: data.email,
       password: data.password,
@@ -23,19 +26,22 @@ export const authService = {
       role: 'client' // Padrão
     })
     
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token)
+    if (response.data.access_token) {
+      localStorage.setItem('auth_token', response.data.access_token)
     }
-    return response.data
+    return {
+      user: response.data.user,
+      token: response.data.access_token
+    }
   },
 
   async logout() {
-    await api.post('/api/logout')
+    await api.post('/logout')
     localStorage.removeItem('auth_token')
   },
 
   async getUser() {
-    const response = await api.get('/api/user')
+    const response = await api.get('/user')
     return response.data
   }
 }

@@ -4,7 +4,8 @@ interface User {
   id: number;
   name: string;
   email: string;
-  role: {
+  role_id: number;
+  role?: {
     id: number;
     name: string;
   };
