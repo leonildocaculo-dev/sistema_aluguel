@@ -8,6 +8,7 @@ class Property extends Model
 {
     protected $fillable = [
         'name',
+        'type',
         'description',
         'province',
         'municipality',

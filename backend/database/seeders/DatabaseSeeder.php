@@ -29,5 +29,16 @@ class DatabaseSeeder extends Seeder
             'password' => 'password',
             'role_id' => 1, // Admin role
         ]);
+
+        User::factory()->create([
+            'name' => 'Test Owner',
+            'email' => 'owner@angolastay.com',
+            'password' => 'password',
+            'role_id' => 2, // Owner role
+        ]);
+
+        $this->call([
+            PropertyMatrixSeeder::class,
+        ]);
     }
 }

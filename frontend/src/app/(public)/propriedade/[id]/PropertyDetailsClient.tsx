@@ -139,6 +139,41 @@ export function PropertyDetailsClient({ id }: { id: string }) {
               Mostrar todas as comodidades
             </Button>
           </section>
+
+          <hr className="border-border my-8" />
+
+          {/* Características / Acomodações */}
+          <section className="mb-10">
+            <h2 className="text-2xl font-bold text-text mb-6">Tipos de Alojamento Disponíveis</h2>
+            {property.accommodations && property.accommodations.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {property.accommodations.map((acc: any) => (
+                  <Card key={acc.id} className="bg-surface border-border">
+                    <CardContent className="p-5">
+                      <h3 className="font-bold text-lg text-primary mb-2">{acc.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-4 h-10 line-clamp-2">{acc.description}</p>
+                      
+                      <div className="flex justify-between items-center text-sm mb-2">
+                        <span className="text-text flex items-center"><Wind className="w-4 h-4 mr-1"/> Capacidade</span>
+                        <span className="font-medium text-text">Até {acc.capacity} pessoas</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm mb-4">
+                        <span className="text-text">Preço base</span>
+                        <span className="font-bold text-primary">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(acc.price_per_night)}</span>
+                      </div>
+
+                      <div className="bg-muted p-2 rounded text-xs text-center text-muted-foreground">
+                        {acc.rental_type === 'both' ? 'Permite reserva por horas e noites' : 'Apenas reserva por noites'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Não há detalhes específicos de alojamento disponíveis.</p>
+            )}
+          </section>
           
           <hr className="border-border my-8" />
           

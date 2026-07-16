@@ -4,8 +4,6 @@ import type { LoginFormValues, RegisterFormValues } from "../schemas/auth"
 
 export const authService = {
   async login(data: LoginFormValues) {
-    // Para Sanctum SPA authentication, primeiro chamamos o CSRF cookie endpoint
-    await api.get('/sanctum/csrf-cookie', { baseURL: 'http://localhost:8000' })
     const response = await api.post('/login', data)
     
     if (response.data.access_token) {
@@ -18,7 +16,6 @@ export const authService = {
   },
 
   async register(data: RegisterFormValues) {
-    await api.get('/sanctum/csrf-cookie', { baseURL: 'http://localhost:8000' })
     const response = await api.post('/register', {
       name: data.name,
       email: data.email,
@@ -37,7 +34,11 @@ export const authService = {
   },
 
   async logout() {
-    await api.post('/logout')
+    try {
+      await api.post('/logout')
+    } catch (e) {
+      // Ignorar erros no logout (ex: token já expirado)
+    }
     Cookies.remove('auth_token')
   },
 

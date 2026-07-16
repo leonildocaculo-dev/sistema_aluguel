@@ -196,23 +196,19 @@ export function CheckoutClient({ id }: { id: string }) {
               <div className="prose prose-invert max-w-none">
                 <h3 className="text-xl font-bold text-white mb-4">Método de Pagamento</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <label className={`cursor-pointer rounded-2xl border p-4 flex flex-col items-center justify-center transition-all ${form.payment_method === 'proxypay' ? 'bg-primary-500/20 border-primary-500 text-white' : 'bg-surface border-white/10 text-gray-400 hover:bg-white/5'}`}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <label className={`cursor-pointer rounded-2xl border-2 p-6 flex flex-col items-center justify-center transition-all transform hover:scale-105 shadow-lg hover:shadow-xl ${form.payment_method === 'proxypay' ? 'bg-orange-500 border-orange-400 text-white shadow-orange-500/50' : 'bg-surface border-border text-muted-foreground hover:border-orange-500/50 hover:text-orange-400'}`}>
                     <input type="radio" name="payment_method" value="proxypay" checked={form.payment_method === 'proxypay'} onChange={(e) => setForm({...form, payment_method: e.target.value})} className="hidden" />
-                    <QrCode className={`w-8 h-8 mb-2 ${form.payment_method === 'proxypay' ? 'text-primary-400' : 'text-gray-500'}`} />
-                    <span className="font-medium text-sm text-center">Referência Multicaixa</span>
+                    <QrCode className={`w-12 h-12 mb-3 ${form.payment_method === 'proxypay' ? 'text-white' : 'text-orange-500'}`} />
+                    <span className="font-bold text-lg text-center">Referência Multicaixa</span>
+                    <span className={`text-xs mt-2 text-center ${form.payment_method === 'proxypay' ? 'text-orange-100' : 'text-muted-foreground'}`}>Pagamento rápido via Express</span>
                   </label>
                   
-                  <label className={`cursor-pointer rounded-2xl border p-4 flex flex-col items-center justify-center transition-all ${form.payment_method === 'gpo_iframe' ? 'bg-primary-500/20 border-primary-500 text-white' : 'bg-surface border-white/10 text-gray-400 hover:bg-white/5'}`}>
-                    <input type="radio" name="payment_method" value="gpo_iframe" checked={form.payment_method === 'gpo_iframe'} onChange={(e) => setForm({...form, payment_method: e.target.value})} className="hidden" />
-                    <CreditCard className={`w-8 h-8 mb-2 ${form.payment_method === 'gpo_iframe' ? 'text-primary-400' : 'text-gray-500'}`} />
-                    <span className="font-medium text-sm text-center">Cartão (Iframe)</span>
-                  </label>
-                  
-                  <label className={`cursor-pointer rounded-2xl border p-4 flex flex-col items-center justify-center transition-all ${form.payment_method === 'manual' ? 'bg-primary-500/20 border-primary-500 text-white' : 'bg-surface border-white/10 text-gray-400 hover:bg-white/5'}`}>
+                  <label className={`cursor-pointer rounded-2xl border-2 p-6 flex flex-col items-center justify-center transition-all transform hover:scale-105 shadow-lg hover:shadow-xl ${form.payment_method === 'manual' ? 'bg-blue-600 border-blue-400 text-white shadow-blue-500/50' : 'bg-surface border-border text-muted-foreground hover:border-blue-500/50 hover:text-blue-400'}`}>
                     <input type="radio" name="payment_method" value="manual" checked={form.payment_method === 'manual'} onChange={(e) => setForm({...form, payment_method: e.target.value})} className="hidden" />
-                    <Landmark className={`w-8 h-8 mb-2 ${form.payment_method === 'manual' ? 'text-primary-400' : 'text-gray-500'}`} />
-                    <span className="font-medium text-sm text-center">Transferência Manual</span>
+                    <Landmark className={`w-12 h-12 mb-3 ${form.payment_method === 'manual' ? 'text-white' : 'text-blue-500'}`} />
+                    <span className="font-bold text-lg text-center">Transferência Bancária</span>
+                    <span className={`text-xs mt-2 text-center ${form.payment_method === 'manual' ? 'text-blue-100' : 'text-muted-foreground'}`}>Upload de comprovativo manual</span>
                   </label>
                 </div>
               </div>
