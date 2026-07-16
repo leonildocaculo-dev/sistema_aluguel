@@ -1,9 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/(public)/pesquisa/page": "app/(public)/pesquisa/page.js",
-  "/(public)/propriedade/[id]/page": "app/(public)/propriedade/[id]/page.js",
-  "/(public)/page": "app/(public)/page.js",
-  "/(protected)/dashboard/page": "app/(protected)/dashboard/page.js",
-  "/(protected)/checkout/[id]/page": "app/(protected)/checkout/[id]/page.js"
-}
