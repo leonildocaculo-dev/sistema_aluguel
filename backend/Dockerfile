@@ -23,9 +23,8 @@ COPY --chown=www-data:www-data . /var/www/html
 # Instalar dependências PHP
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Executar comandos de otimização do Laravel
-RUN php artisan config:cache && \
-    php artisan route:cache && \
+# Executar comandos de otimização do Laravel (exceto config:cache)
+RUN php artisan route:cache && \
     php artisan view:cache
 
 # Expor a porta 8080 (usada por omissão na imagem serversideup)

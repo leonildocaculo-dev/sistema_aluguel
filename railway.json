@@ -10,20 +10,21 @@
   "services": {
     "backend": {
       "name": "Backend Laravel",
-      "builder": "nixpacks",
+      "builder": "dockerfile",
       "rootDirectory": "/backend",
+      "dockerfilePath": "./Dockerfile",
       "environment": {
         "APP_ENV": "production",
         "APP_DEBUG": "false",
         "LOG_CHANNEL": "stderr",
-        "DB_CONNECTION": "pgsql",
-        "NIXPACKS_NODE_VERSION": "20"
+        "DB_CONNECTION": "pgsql"
       }
     },
     "frontend": {
       "name": "Frontend Next.js",
-      "builder": "nixpacks",
+      "builder": "dockerfile",
       "rootDirectory": "/frontend",
+      "dockerfilePath": "./Dockerfile",
       "environment": {
         "NODE_ENV": "production",
         "HOSTNAME": "0.0.0.0",
