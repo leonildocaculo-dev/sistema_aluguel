@@ -28,6 +28,9 @@
         "NODE_ENV": "production",
         "HOSTNAME": "0.0.0.0",
         "NIXPACKS_NODE_VERSION": "20"
+      },
+      "deploy": {
+        "startCommand": "node .next/standalone/server.js"
       }
     }
   }
