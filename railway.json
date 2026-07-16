@@ -17,7 +17,6 @@
         "APP_DEBUG": "false",
         "LOG_CHANNEL": "stderr",
         "DB_CONNECTION": "pgsql",
-        "PORT": "8080",
         "NIXPACKS_NODE_VERSION": "20"
       }
     },
@@ -27,7 +26,6 @@
       "rootDirectory": "/frontend",
       "environment": {
         "NODE_ENV": "production",
-        "PORT": "3000",
         "NIXPACKS_NODE_VERSION": "20"
       }
     }
