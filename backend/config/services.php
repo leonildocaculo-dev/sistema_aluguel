@@ -40,4 +40,16 @@ return [
         'token' => env('WHATSAPP_API_TOKEN'),
     ],
 
+    'proxypay' => [
+        'url' => env('PROXYPAY_URL', 'https://api.sandbox.proxypay.co.ao'),
+        'key' => env('PROXYPAY_API_KEY'),
+        'secret' => env('PROXYPAY_WEBHOOK_SECRET'),
+    ],
+
+    'gpo' => [
+        'url' => env('GPO_URL', 'https://api.sandbox.gpo.co.ao'),
+        'key' => env('GPO_API_KEY'),
+        'secret' => env('GPO_WEBHOOK_SECRET'),
+    ],
+
 ];

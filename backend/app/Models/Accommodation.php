@@ -19,4 +19,14 @@ class Accommodation extends Model
     {
         return $this->belongsTo(Property::class);
     }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function getAverageRatingAttribute()
+    {
+        return round($this->reviews()->avg('rating') ?: 0, 1);
+    }
 }

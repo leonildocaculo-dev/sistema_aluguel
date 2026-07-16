@@ -7,14 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 class Property extends Model
 {
     protected $fillable = [
-        'user_id',
         'name',
         'description',
         'province',
         'municipality',
         'address',
         'price_per_night',
+        'user_id',
         'status',
+        'latitude',
+        'longitude',
+        'contact_phone',
+        'contact_email',
+        'contact_website',
+        'video_path',
+        'video_mime_type',
+        'video_size_bytes',
+        'video_duration_seconds',
     ];
 
     public function owner()

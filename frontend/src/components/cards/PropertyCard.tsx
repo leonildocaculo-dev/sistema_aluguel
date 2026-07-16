@@ -1,5 +1,7 @@
+"use client";
+
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { Star, MapPin, Heart } from "lucide-react"
 import { Card, CardContent } from "../ui/Card"
 import { Button } from "../ui/Button"
@@ -30,11 +32,11 @@ export function PropertyCard({
   isFavorite = false,
   className
 }: PropertyCardProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
 
   return (
     <Card 
-      onClick={() => navigate(`/propriedade/${id}`)}
+      onClick={() => router.push(`/propriedade/${id}`)}
       className={cn("overflow-hidden group cursor-pointer border-border/50 hover:border-primary/30 transition-colors", className)}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">

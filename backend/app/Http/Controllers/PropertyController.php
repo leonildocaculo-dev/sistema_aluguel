@@ -9,20 +9,65 @@ use Illuminate\Support\Facades\DB;
 
 class PropertyController extends Controller
 {
-    // Cliente/Público: Listar propriedades aprovadas
     public function index(Request $request)
     {
         $query = Property::with(['images', 'accommodations'])->where('status', 'approved');
 
-        // Pesquisa simples por localização/preço (para usar os índices compostos)
-        if ($request->has('province')) {
+        // Generic text search (Location or Name)
+        if ($request->has('query') && !empty($request->input('query'))) {
+            $searchTerm = $request->input('query');
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('province', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('municipality', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('name', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('address', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+
+        // Specific Province/Municipality (kept for backward compatibility)
+        if ($request->has('province') && !empty($request->province)) {
             $query->where('province', $request->province);
         }
-        if ($request->has('municipality')) {
+        if ($request->has('municipality') && !empty($request->municipality)) {
             $query->where('municipality', $request->municipality);
+        }
+
+        // Price range
+        if ($request->has('min_price')) {
+            $query->where('price_per_night', '>=', $request->min_price);
         }
         if ($request->has('max_price')) {
             $query->where('price_per_night', '<=', $request->max_price);
+        }
+
+        // Guests Capacity (query related accommodations)
+        if ($request->has('guests') && $request->guests > 0) {
+            $query->whereHas('accommodations', function($q) use ($request) {
+                $q->where('capacity', '>=', $request->guests);
+            });
+        }
+
+        // Accommodation Types filtering
+        if ($request->has('types') && is_array($request->types) && count($request->types) > 0) {
+            $types = $request->types;
+            $query->where(function($q) use ($types) {
+                foreach ($types as $type) {
+                    // Match type roughly against property name or description
+                    $q->orWhere('name', 'LIKE', "%{$type}%")
+                      ->orWhere('description', 'LIKE', "%{$type}%");
+                }
+            });
+        }
+
+        // Sorting
+        $sort = $request->input('sort', 'recommended');
+        if ($sort === 'price_asc') {
+            $query->orderBy('price_per_night', 'asc');
+        } elseif ($sort === 'price_desc') {
+            $query->orderBy('price_per_night', 'desc');
+        } else {
+            // Default "recommended" or latest
+            $query->latest();
         }
 
         // Paginação obrigatória conforme SKILL.md

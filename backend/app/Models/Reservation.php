@@ -12,7 +12,6 @@ class Reservation extends Model
         'check_in',
         'check_out',
         'total_price',
-        'status',
     ];
 
     public function user()
@@ -38,5 +37,10 @@ class Reservation extends Model
     public function paymentIntents()
     {
         return $this->hasMany(PaymentIntent::class);
+    }
+
+    public function review()
+    {
+        return $this->hasOne(Review::class);
     }
 }

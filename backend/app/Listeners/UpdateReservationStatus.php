@@ -16,15 +16,18 @@ class UpdateReservationStatus implements ShouldQueue
     {
         $reservation = $event->intent->reservation;
 
-        if ($reservation && $reservation->status !== 'confirmed') {
-            $reservation->update(['status' => 'confirmed']);
+        // O schema DB usa 'confirmado', não 'confirmed'
+        if ($reservation && $reservation->status !== 'confirmado') {
+            $reservation->update(['status' => 'confirmado']);
             
+            // Disparar Notificação por Email (Laravel Notifications)
+            $reservation->user->notify(new \App\Notifications\ReservationStatusNotification($reservation, 'confirmado'));
+
             // Disparar o Job para calcular comissões de forma assíncrona
             dispatch(new GenerateCommissionJob($event->intent));
 
-            // Disparar Notificações WhatsApp Assíncronas
+            // Disparar Notificações WhatsApp Assíncronas (se houver telefone)
             $clientMessage = "Olá {$reservation->user->name}, o seu pagamento de {$reservation->total_price}Kz foi confirmado. A sua reserva em AngolaStay está garantida!";
-            // Assumindo que o utilizador tem campo phone
             if (!empty($reservation->user->phone)) {
                 dispatch(new \App\Jobs\SendWhatsAppMessageJob($reservation->user->phone, $clientMessage));
             }

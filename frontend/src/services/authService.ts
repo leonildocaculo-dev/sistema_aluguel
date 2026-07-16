@@ -1,4 +1,5 @@
 import { api } from "./api"
+import Cookies from 'js-cookie';
 import type { LoginFormValues, RegisterFormValues } from "../schemas/auth"
 
 export const authService = {
@@ -8,7 +9,7 @@ export const authService = {
     const response = await api.post('/login', data)
     
     if (response.data.access_token) {
-      localStorage.setItem('auth_token', response.data.access_token)
+      Cookies.set('auth_token', response.data.access_token, { expires: 7, secure: true, sameSite: 'strict' })
     }
     return {
       user: response.data.user,
@@ -27,7 +28,7 @@ export const authService = {
     })
     
     if (response.data.access_token) {
-      localStorage.setItem('auth_token', response.data.access_token)
+      Cookies.set('auth_token', response.data.access_token, { expires: 7, secure: true, sameSite: 'strict' })
     }
     return {
       user: response.data.user,
@@ -37,7 +38,7 @@ export const authService = {
 
   async logout() {
     await api.post('/logout')
-    localStorage.removeItem('auth_token')
+    Cookies.remove('auth_token')
   },
 
   async getUser() {

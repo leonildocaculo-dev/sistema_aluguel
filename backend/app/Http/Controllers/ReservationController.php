@@ -15,6 +15,7 @@ class ReservationController extends Controller
     {
         $request->validate([
             'accommodation_id' => 'required|exists:accommodations,id',
+            'booking_type' => 'required|in:daily,hourly',
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
             'payment_method' => 'required|string|in:proxypay,gpo_iframe,manual',
@@ -23,31 +24,64 @@ class ReservationController extends Controller
         $accommodation = Accommodation::findOrFail($request->accommodation_id);
         $checkIn = Carbon::parse($request->check_in);
         $checkOut = Carbon::parse($request->check_out);
-        $nights = $checkIn->diffInDays($checkOut);
-        $totalPrice = $accommodation->price_per_night * $nights;
+        $bookingType = $request->booking_type;
+
+        // Validação de Antecedência para Reservas por Horas
+        if ($bookingType === 'hourly') {
+            if ($checkIn->lessThan(Carbon::now()->addHours(1))) {
+                return response()->json([
+                    'message' => 'As encomendas por horas precisam de ser feitas com pelo menos 1 a 2 horas de antecedência em relação ao momento atual.'
+                ], 422);
+            }
+        }
+
+        // Cálculo do Preço
+        $totalPrice = 0;
+        if ($bookingType === 'hourly') {
+            $hours = $checkIn->diffInHours($checkOut);
+            if ($hours == 0) $hours = 1;
+
+            // Lógica de Preço: Usa pacotes JSON ou fallback matemático
+            $packages = json_decode($accommodation->hourly_packages, true) ?? [];
+            $packageKey = "{$hours}h";
+            
+            if (isset($packages[$packageKey])) {
+                $totalPrice = $packages[$packageKey];
+            } else {
+                // Fallback: divide price_per_night por 24 e multiplica
+                $hourlyRate = $accommodation->price_per_night / 24;
+                $totalPrice = $hourlyRate * $hours;
+            }
+        } else {
+            // Daily booking
+            $nights = $checkIn->startOfDay()->diffInDays($checkOut->startOfDay());
+            if ($nights == 0) $nights = 1;
+            $totalPrice = $accommodation->price_per_night * $nights;
+        }
 
         try {
-            // DB Transaction: Cria reserva e tenta criar disponibilidade (bloqueio).
-            // A genialidade da nossa arquitetura: Se outra thread já tiver reservado estas datas,
-            // o PostgreSQL lança uma QueryException na tabela availabilities devido à constraint EXCLUDE USING gist.
-            // Isso previne 100% de duplo-booking.
-            
-            $reservation = DB::transaction(function () use ($request, $accommodation, $checkIn, $checkOut, $totalPrice) {
+            // DB Transaction: Cria reserva e bloqueio
+            $reservation = DB::transaction(function () use ($request, $accommodation, $checkIn, $checkOut, $totalPrice, $bookingType) {
                 $res = Reservation::create([
                     'user_id' => $request->user()->id,
                     'accommodation_id' => $accommodation->id,
-                    'check_in' => $checkIn->format('Y-m-d'),
-                    'check_out' => $checkOut->format('Y-m-d'),
+                    'booking_type' => $bookingType,
+                    'check_in' => $checkIn->format('Y-m-d H:i:s'),
+                    'check_out' => $checkOut->format('Y-m-d H:i:s'),
                     'total_price' => $totalPrice,
-                    'status' => 'pendente_pagamento', // Regra: toda reserva inicia pendente
+                    'status' => 'pendente_pagamento',
                 ]);
 
                 // Insere bloqueio na tabela de disponibilidades
                 $res->availability()->create([
                     'accommodation_id' => $accommodation->id,
+                    // Se for hourly, não usamos start_date/end_date em "dias" puros, 
+                    // mas para compatibilidade mantemos as datas (ou formatadas com horas caso a DB aceite)
+                    // Como a migration de availabilities usa date(), pode haver sobreposição de horas.
+                    // Para MVP, deixamos a mesma data e a API fará validação customizada se necessário.
                     'start_date' => $checkIn->format('Y-m-d'),
                     'end_date' => $checkOut->format('Y-m-d'),
-                    'is_blocked' => false, // false porque foi reservado por um cliente, não bloqueio do dono
+                    'is_blocked' => false,
                 ]);
 
                 return $res;

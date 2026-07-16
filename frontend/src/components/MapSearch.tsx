@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { api } from '../services/api';
 
 // Usamos a chave do .env
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || '';
+mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
 export default function MapSearch() {
   const mapContainer = useRef<HTMLDivElement>(null);

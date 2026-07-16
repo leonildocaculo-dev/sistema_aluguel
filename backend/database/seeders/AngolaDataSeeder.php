@@ -15,17 +15,17 @@ class AngolaDataSeeder extends Seeder
         // 1. Criar utilizadores (Proprietários)
         $owner1 = User::firstOrCreate(
             ['email' => 'hoteis.luanda@angolastay.com'],
-            ['name' => 'Hotéis Luanda SA', 'password' => bcrypt('password'), 'role_id' => 2]
+            ['name' => 'Hotéis Luanda SA', 'password' => 'password', 'role_id' => 2]
         );
 
         $owner2 = User::firstOrCreate(
             ['email' => 'benguela.resorts@angolastay.com'],
-            ['name' => 'Benguela Resorts', 'password' => bcrypt('password'), 'role_id' => 2]
+            ['name' => 'Benguela Resorts', 'password' => 'password', 'role_id' => 2]
         );
 
         $owner3 = User::firstOrCreate(
             ['email' => 'huila.lodges@angolastay.com'],
-            ['name' => 'Huíla Lodges e Turismo', 'password' => bcrypt('password'), 'role_id' => 2]
+            ['name' => 'Huíla Lodges e Turismo', 'password' => 'password', 'role_id' => 2]
         );
 
         // 2. Criar Propriedades e Acomodações
@@ -176,6 +176,105 @@ class AngolaDataSeeder extends Seeder
             'capacity' => 2,
             'price_per_night' => 45000,
             'quantity' => 8
+        ]);
+        // 3. Criar utilizadores (Clientes) para avaliações
+        $client1 = User::firstOrCreate(
+            ['email' => 'joao.cliente@gmail.com'],
+            ['name' => 'João Silva', 'password' => 'password', 'role_id' => 3]
+        );
+
+        $client2 = User::firstOrCreate(
+            ['email' => 'maria.viajante@gmail.com'],
+            ['name' => 'Maria Fernandes', 'password' => 'password', 'role_id' => 3]
+        );
+
+        // 4. Criar Reservas e Avaliações (Reviews)
+        // Para a Propriedade 1
+        $acc1 = \App\Models\Accommodation::where('property_id', $prop1->id)->first();
+        $res1 = \App\Models\Reservation::create([
+            'user_id' => $client1->id,
+            'accommodation_id' => $acc1->id,
+            'check_in' => now()->subDays(10)->toDateString(),
+            'check_out' => now()->subDays(5)->toDateString(),
+            'total_price' => $acc1->price_per_night * 5,
+            'status' => 'finalizada'
+        ]);
+        \App\Models\Review::create([
+            'reservation_id' => $res1->id,
+            'user_id' => $client1->id,
+            'accommodation_id' => $acc1->id,
+            'rating' => 5,
+            'comment' => 'Serviço excelente e localização privilegiada no centro de Luanda. O pequeno-almoço é fantástico!'
+        ]);
+
+        $res2 = \App\Models\Reservation::create([
+            'user_id' => $client2->id,
+            'accommodation_id' => $acc1->id,
+            'check_in' => now()->subDays(20)->toDateString(),
+            'check_out' => now()->subDays(18)->toDateString(),
+            'total_price' => $acc1->price_per_night * 2,
+            'status' => 'finalizada'
+        ]);
+        \App\Models\Review::create([
+            'reservation_id' => $res2->id,
+            'user_id' => $client2->id,
+            'accommodation_id' => $acc1->id,
+            'rating' => 4,
+            'comment' => 'Muito bom ambiente, apenas o parque de estacionamento é um pouco pequeno.'
+        ]);
+
+        // Para a Propriedade 2
+        $acc2 = \App\Models\Accommodation::where('property_id', $prop2->id)->first();
+        $res3 = \App\Models\Reservation::create([
+            'user_id' => $client1->id,
+            'accommodation_id' => $acc2->id,
+            'check_in' => now()->subDays(30)->toDateString(),
+            'check_out' => now()->subDays(28)->toDateString(),
+            'total_price' => $acc2->price_per_night * 2,
+            'status' => 'finalizada'
+        ]);
+        \App\Models\Review::create([
+            'reservation_id' => $res3->id,
+            'user_id' => $client1->id,
+            'accommodation_id' => $acc2->id,
+            'rating' => 5,
+            'comment' => 'Talatona no seu melhor! As villas dão uma sensação de privacidade maravilhosa. Recomendo.'
+        ]);
+
+        // Para a Propriedade 3
+        $acc3 = \App\Models\Accommodation::where('property_id', $prop3->id)->first();
+        $res4 = \App\Models\Reservation::create([
+            'user_id' => $client2->id,
+            'accommodation_id' => $acc3->id,
+            'check_in' => now()->subDays(15)->toDateString(),
+            'check_out' => now()->subDays(10)->toDateString(),
+            'total_price' => $acc3->price_per_night * 5,
+            'status' => 'finalizada'
+        ]);
+        \App\Models\Review::create([
+            'reservation_id' => $res4->id,
+            'user_id' => $client2->id,
+            'accommodation_id' => $acc3->id,
+            'rating' => 5,
+            'comment' => 'A Baía Azul é deslumbrante e dormir nestes bungalows com o som do mar é uma experiência única em Angola.'
+        ]);
+
+        // Para a Propriedade 4
+        $acc4 = \App\Models\Accommodation::where('property_id', $prop4->id)->first();
+        $res5 = \App\Models\Reservation::create([
+            'user_id' => $client1->id,
+            'accommodation_id' => $acc4->id,
+            'check_in' => now()->subDays(40)->toDateString(),
+            'check_out' => now()->subDays(38)->toDateString(),
+            'total_price' => $acc4->price_per_night * 2,
+            'status' => 'finalizada'
+        ]);
+        \App\Models\Review::create([
+            'reservation_id' => $res5->id,
+            'user_id' => $client1->id,
+            'accommodation_id' => $acc4->id,
+            'rating' => 5,
+            'comment' => 'Clima espetacular e a Fenda da Tundavala fica muito perto. Ótimo para famílias.'
         ]);
     }
 }
