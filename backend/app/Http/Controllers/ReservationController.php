@@ -8,19 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Services\PaymentService;
+use App\Http\Requests\Reservation\StoreReservationRequest;
 
 class ReservationController extends Controller
 {
-    public function store(Request $request, PaymentService $paymentService)
+    public function store(StoreReservationRequest $request, PaymentService $paymentService)
     {
-        $request->validate([
-            'accommodation_id' => 'required|exists:accommodations,id',
-            'booking_type' => 'required|in:daily,hourly',
-            'check_in' => 'required|date|after_or_equal:today',
-            'check_out' => 'required|date|after:check_in',
-            'payment_method' => 'required|string|in:proxypay,gpo_iframe,manual',
-        ]);
-
         $accommodation = Accommodation::findOrFail($request->accommodation_id);
         $checkIn = Carbon::parse($request->check_in);
         $checkOut = Carbon::parse($request->check_out);
@@ -119,5 +112,15 @@ class ReservationController extends Controller
     {
         $reservation = Reservation::where('user_id', $request->user()->id)->findOrFail($id);
         return response()->json(['status' => $reservation->status]);
+    }
+
+    public function show(Request $request, $id)
+    {
+        // Load reservation with relations needed for invoice
+        $reservation = Reservation::where('user_id', $request->user()->id)
+            ->with(['accommodation.property.owner', 'user'])
+            ->findOrFail($id);
+        
+        return response()->json($reservation);
     }
 }

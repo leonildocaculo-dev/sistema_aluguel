@@ -3,9 +3,10 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, Star, Share, Heart, Check, Wifi, Car, Coffee, Wind, Loader2 } from "lucide-react";
+import Image from "next/image";
 
-import { Button } from "../../../../components/ui/Button";
-import { Card, CardContent } from "../../../../components/ui/Card";
+import { Button } from "../../../../components/ui/button";
+import { Card, CardContent } from "../../../../components/ui/card";
 import { api } from "../../../../services/api";
 
 export function PropertyDetailsClient({ id }: { id: string }) {
@@ -88,20 +89,20 @@ export function PropertyDetailsClient({ id }: { id: string }) {
       <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-2 h-[400px] md:h-[500px] rounded-2xl overflow-hidden mb-8 bg-muted">
         {property.images && property.images.length > 0 ? (
            <>
-            <div className="md:col-span-2 row-span-2 relative">
-              <img src={property.images[0]?.path} alt="Principal" className="w-full h-full object-cover" />
+            <div className="md:col-span-2 row-span-2 relative bg-muted/50">
+              <SafeImage src={property.images[0]?.path} alt="Principal" sizes="(max-width: 768px) 100vw, 50vw" />
             </div>
-            <div className="hidden md:block relative">
-              <img src={property.images[1]?.path || property.images[0]?.path} alt="Foto 2" className="w-full h-full object-cover" />
+            <div className="hidden md:block relative bg-muted/50">
+              <SafeImage src={property.images[1]?.path || property.images[0]?.path} alt="Foto 2" sizes="25vw" fallbackIndex={1} />
             </div>
-            <div className="hidden md:block relative">
-              <img src={property.images[2]?.path || property.images[0]?.path} alt="Foto 3" className="w-full h-full object-cover" />
+            <div className="hidden md:block relative bg-muted/50">
+              <SafeImage src={property.images[2]?.path || property.images[0]?.path} alt="Foto 3" sizes="25vw" fallbackIndex={2} />
             </div>
-            <div className="hidden md:block relative">
-              <img src={property.images[3]?.path || property.images[0]?.path} alt="Foto 4" className="w-full h-full object-cover" />
+            <div className="hidden md:block relative bg-muted/50">
+              <SafeImage src={property.images[3]?.path || property.images[0]?.path} alt="Foto 4" sizes="25vw" fallbackIndex={3} />
             </div>
-            <div className="hidden md:block relative">
-              <img src={property.images[4]?.path || property.images[0]?.path} alt="Foto 5" className="w-full h-full object-cover" />
+            <div className="hidden md:block relative bg-muted/50">
+              <SafeImage src={property.images[4]?.path || property.images[0]?.path} alt="Foto 5" sizes="25vw" fallbackIndex={4} />
             </div>
            </>
         ) : (
@@ -220,9 +221,47 @@ export function PropertyDetailsClient({ id }: { id: string }) {
   );
 }
 
+function SafeImage({ src, alt, sizes, fallbackIndex = 0 }: { src: string, alt: string, sizes: string, fallbackIndex?: number }) {
+  const fallbacks = [
+    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1551882547-ff40c0d5b9af?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=800"
+  ];
+  
+  let initialSrc = src;
+  if (initialSrc && !initialSrc.startsWith('http') && !initialSrc.startsWith('/')) {
+     initialSrc = `http://localhost:8000/storage/${initialSrc}`;
+  }
+
+  const [imgSrc, setImgSrc] = React.useState(initialSrc || fallbacks[fallbackIndex % fallbacks.length]);
+
+  return (
+    <Image 
+      src={imgSrc} 
+      alt={alt} 
+      fill 
+      sizes={sizes} 
+      className="object-cover"
+      onError={() => setImgSrc(fallbacks[fallbackIndex % fallbacks.length])}
+    />
+  );
+}
+
 function BookingWidget({ property, basePrice, router }: { property: any, basePrice: number, router: any }) {
   const [bookingMode, setBookingMode] = React.useState<'daily' | 'hourly'>('daily');
   const [selectedPackage, setSelectedPackage] = React.useState('2h');
+  
+  // State for functional booking
+  const [checkin, setCheckin] = React.useState('');
+  const [checkout, setCheckout] = React.useState('');
+  const [hourlyDate, setHourlyDate] = React.useState('');
+  const [guests, setGuests] = React.useState(1);
+  const [selectedAccommodationId, setSelectedAccommodationId] = React.useState(
+    property.accommodations && property.accommodations.length > 0 ? property.accommodations[0].id : ''
+  );
+
   const packages = [
     { id: '2h', label: '2 Horas' },
     { id: '5h', label: '5 Horas' },
@@ -245,20 +284,70 @@ function BookingWidget({ property, basePrice, router }: { property: any, basePri
   };
 
   const handleBook = () => {
-    // In production, pass dates/hours via context or query params
-    const query = new URLSearchParams({
-      type: bookingMode,
-      ...(bookingMode === 'hourly' ? { package: selectedPackage } : {})
-    });
-    router.push(`/checkout/${property.id}?${query.toString()}`);
+    // Validação básica
+    if (bookingMode === 'daily' && (!checkin || !checkout)) {
+       alert("Por favor selecione a data de check-in e check-out.");
+       return;
+    }
+    if (bookingMode === 'hourly' && !hourlyDate) {
+       alert("Por favor selecione a data e hora de entrada.");
+       return;
+    }
+
+    const params = {
+      t: bookingMode,
+      g: guests.toString(),
+      a: selectedAccommodationId,
+      ...(bookingMode === 'daily' ? { ci: checkin, co: checkout } : { hd: hourlyDate, p: selectedPackage })
+    };
+    
+    // Obscure data via Base64 encoding
+    const encryptedData = btoa(encodeURIComponent(JSON.stringify(params)));
+    router.push(`/checkout/${property.id}?d=${encryptedData}`);
   };
+
+  const getSelectedAccommodationPrice = () => {
+    if (!selectedAccommodationId) return basePrice;
+    const acc = property.accommodations?.find((a: any) => a.id == selectedAccommodationId);
+    return acc ? acc.price_per_night : basePrice;
+  };
+  
+  const currentBasePrice = getSelectedAccommodationPrice();
+  
+  // Calculate nights
+  const getNights = () => {
+     if (!checkin || !checkout) return 1; // default to 1 for display
+     const d1 = new Date(checkin);
+     const d2 = new Date(checkout);
+     const diffTime = Math.abs(d2.getTime() - d1.getTime());
+     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+     return diffDays > 0 ? diffDays : 1;
+  };
+  
+  const nights = getNights();
+
+  const getSelectedAccommodationCapacity = () => {
+    if (!selectedAccommodationId) return 1;
+    const acc = property.accommodations?.find((a: any) => a.id == selectedAccommodationId);
+    return acc ? acc.capacity : 1;
+  };
+  
+  const capacity = getSelectedAccommodationCapacity();
+  const guestOptions = Array.from({length: capacity || 1}, (_, i) => i + 1);
+
+  // Ensure guests state doesn't exceed capacity when changing accommodation
+  React.useEffect(() => {
+    if (guests > capacity) {
+      setGuests(capacity);
+    }
+  }, [capacity, guests]);
 
   return (
     <div>
       <div className="flex items-baseline gap-1 mb-6">
         <span className="text-2xl font-bold text-text">
           {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(
-            bookingMode === 'daily' ? basePrice : getHourlyPrice(selectedPackage)
+            bookingMode === 'daily' ? currentBasePrice : getHourlyPrice(selectedPackage)
           )}
         </span>
         <span className="text-muted-foreground text-sm">
@@ -289,23 +378,55 @@ function BookingWidget({ property, basePrice, router }: { property: any, basePri
         </div>
       )}
 
+      {property.accommodations && property.accommodations.length > 0 && (
+         <div className="mb-4">
+            <span className="block text-xs font-bold text-text uppercase mb-2">Alojamento Selecionado</span>
+            <select 
+              className="w-full bg-surface border border-border text-sm text-text outline-none p-3 rounded-xl cursor-pointer"
+              value={selectedAccommodationId}
+              onChange={(e) => setSelectedAccommodationId(e.target.value)}
+            >
+              {property.accommodations.map((acc: any) => (
+                <option key={acc.id} value={acc.id}>{acc.name} - {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(acc.price_per_night)}/noite</option>
+              ))}
+            </select>
+         </div>
+      )}
+
       <div className="border border-border rounded-xl mb-6 overflow-hidden">
         {bookingMode === 'daily' ? (
           <div className="flex border-b border-border">
             <div className="flex-1 p-3 border-r border-border cursor-pointer hover:bg-muted/30">
               <span className="block text-xs font-bold text-text uppercase">Check-in</span>
-              <span className="text-sm text-muted-foreground">Adicionar data</span>
+              <input 
+                 type="date" 
+                 value={checkin}
+                 onChange={(e) => setCheckin(e.target.value)}
+                 className="w-full bg-transparent text-sm text-text outline-none mt-1 cursor-pointer" 
+                 min={new Date().toISOString().split('T')[0]}
+              />
             </div>
             <div className="flex-1 p-3 cursor-pointer hover:bg-muted/30">
               <span className="block text-xs font-bold text-text uppercase">Check-out</span>
-              <span className="text-sm text-muted-foreground">Adicionar data</span>
+              <input 
+                 type="date" 
+                 value={checkout}
+                 onChange={(e) => setCheckout(e.target.value)}
+                 className="w-full bg-transparent text-sm text-text outline-none mt-1 cursor-pointer" 
+                 min={checkin || new Date().toISOString().split('T')[0]}
+              />
             </div>
           </div>
         ) : (
           <div className="flex border-b border-border">
              <div className="flex-1 p-3 border-r border-border cursor-pointer hover:bg-muted/30">
               <span className="block text-xs font-bold text-text uppercase">Data / Hora de Entrada</span>
-              <input type="datetime-local" className="w-full bg-transparent text-sm text-text outline-none mt-1" />
+              <input 
+                 type="datetime-local" 
+                 value={hourlyDate}
+                 onChange={(e) => setHourlyDate(e.target.value)}
+                 className="w-full bg-transparent text-sm text-text outline-none mt-1 cursor-pointer" 
+              />
             </div>
             <div className="flex-1 p-3 cursor-pointer hover:bg-muted/30">
               <span className="block text-xs font-bold text-text uppercase">Pacote</span>
@@ -320,11 +441,16 @@ function BookingWidget({ property, basePrice, router }: { property: any, basePri
           </div>
         )}
         <div className="p-3 cursor-pointer hover:bg-muted/30 flex justify-between items-center">
-          <div>
+          <div className="w-full">
             <span className="block text-xs font-bold text-text uppercase">Hóspedes</span>
-            <span className="text-sm text-muted-foreground">1 hóspede</span>
+            <select 
+              className="w-full bg-transparent text-sm text-text outline-none mt-1 cursor-pointer"
+              value={guests}
+              onChange={(e) => setGuests(Number(e.target.value))}
+            >
+               {guestOptions.map(g => <option key={g} value={g}>{g} {g === 1 ? 'hóspede' : 'hóspedes'}</option>)}
+            </select>
           </div>
-          <span className="text-xl text-muted-foreground">&#8964;</span>
         </div>
       </div>
 
@@ -339,20 +465,16 @@ function BookingWidget({ property, basePrice, router }: { property: any, basePri
       {bookingMode === 'daily' && (
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex justify-between text-text text-sm">
-            <span className="underline cursor-pointer">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(basePrice)} x 5 noites</span>
-            <span className="font-medium">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(basePrice * 5)}</span>
+            <span className="underline cursor-pointer">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(currentBasePrice)} x {nights} noites</span>
+            <span className="font-medium">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(currentBasePrice * nights)}</span>
           </div>
           <div className="flex justify-between text-text text-sm">
             <span className="underline cursor-pointer">Taxa de limpeza</span>
             <span className="font-medium">15.000,00 Kz</span>
           </div>
-          <div className="flex justify-between text-text text-sm">
-            <span className="underline cursor-pointer">Taxa de serviço AngolaStay</span>
-            <span className="font-medium">12.500,00 Kz</span>
-          </div>
           <div className="border-t border-border mt-4 pt-4 flex justify-between font-bold text-lg text-text">
             <span>Total estimado</span>
-            <span className="text-primary">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format((basePrice * 5) + 15000 + 12500)}</span>
+            <span className="text-primary">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format((currentBasePrice * nights) + 15000)}</span>
           </div>
         </div>
       )}
@@ -363,13 +485,9 @@ function BookingWidget({ property, basePrice, router }: { property: any, basePri
             <span className="underline cursor-pointer">Pacote {packages.find(p=>p.id===selectedPackage)?.label}</span>
             <span className="font-medium">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(getHourlyPrice(selectedPackage))}</span>
           </div>
-          <div className="flex justify-between text-text text-sm">
-            <span className="underline cursor-pointer">Taxa de serviço AngolaStay</span>
-            <span className="font-medium">2.500,00 Kz</span>
-          </div>
           <div className="border-t border-border mt-4 pt-4 flex justify-between font-bold text-lg text-text">
             <span>Total estimado</span>
-            <span className="text-primary">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(getHourlyPrice(selectedPackage) + 2500)}</span>
+            <span className="text-primary">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(getHourlyPrice(selectedPackage))}</span>
           </div>
         </div>
       )}

@@ -9,16 +9,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Http\Requests\Payment\UploadComprovativoRequest;
+use App\Services\PaymentService;
 
 class PaymentController extends Controller
 {
-    // Cliente: Upload de comprovativo de transferência
-    public function uploadComprovativo(Request $request, $reservationId)
-    {
-        $request->validate([
-            'comprovativo' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // max 5MB, MIME types reais validados
-        ]);
+    protected $paymentService;
 
+    public function __construct(PaymentService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
+    // Cliente: Upload de comprovativo de transferência
+    public function uploadComprovativo(UploadComprovativoRequest $request, $reservationId)
+    {
         $reservation = $request->user()->reservations()->findOrFail($reservationId);
 
         if ($reservation->status !== 'pendente_pagamento') {
@@ -66,58 +70,14 @@ class PaymentController extends Controller
     // Admin: Aprovar Pagamento
     public function approve(Request $request, $id)
     {
-        $payment = Payment::where('estado', 'aguarda_validação')->findOrFail($id);
-
-        DB::transaction(function () use ($payment, $request) {
-            $payment->update([
-                'estado' => 'confirmado',
-                'validado_por' => $request->user()->id,
-                'data_pagamento' => now(),
-            ]);
-
-            $payment->reservation->update(['status' => 'confirmado']);
-
-            // Criar Log de Auditoria
-            AuditLog::create([
-                'user_id' => $request->user()->id,
-                'action' => 'approved_payment',
-                'model_type' => Payment::class,
-                'model_id' => $payment->id,
-                'new_values' => ['estado' => 'confirmado'],
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
-        });
-
+        $this->paymentService->approveManualPayment($id, $request->user());
         return response()->json(['message' => 'Pagamento e Reserva confirmados com sucesso.']);
     }
 
     // Admin: Rejeitar Pagamento
     public function reject(Request $request, $id)
     {
-        $payment = Payment::where('estado', 'aguarda_validação')->findOrFail($id);
-
-        DB::transaction(function () use ($payment, $request) {
-            $payment->update([
-                'estado' => 'rejeitado',
-                'validado_por' => $request->user()->id,
-            ]);
-
-            $payment->reservation->update(['status' => 'rejeitado']);
-            // A disponibilidade é libertada quando a reserva é rejeitada (não bloqueado por trigger neste MVP, mas na prática remove-se o Availability correspondente)
-            $payment->reservation->availability()->delete();
-
-            AuditLog::create([
-                'user_id' => $request->user()->id,
-                'action' => 'rejected_payment',
-                'model_type' => Payment::class,
-                'model_id' => $payment->id,
-                'new_values' => ['estado' => 'rejeitado'],
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
-        });
-
+        $this->paymentService->rejectManualPayment($id, $request->user());
         return response()->json(['message' => 'Pagamento rejeitado e reserva cancelada.']);
     }
 }

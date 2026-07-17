@@ -13,14 +13,23 @@ class GpoIframeGateway implements PaymentGatewayInterface
 {
     public function createIntent(Reservation $reservation, float $amount): PaymentIntent
     {
-        $apiUrl = config('services.gpo.url', 'https://api.sandbox.gpo.co.ao');
-        $apiKey = config('services.gpo.key', '');
+        if (!config('features.payments.gpo', true)) {
+            throw new \Exception('O gateway GPO encontra-se temporariamente desativado.');
+        }
+
+        $apiUrl = config('payments.gpo.url');
+        $apiKey = config('payments.gpo.api_key');
         
         $sessionId = Str::uuid()->toString();
-        $iframeUrl = 'https://sandbox.gpo.co.ao/widget?session=' . $sessionId; // Default simulação
+        $iframeUrl = "{$apiUrl}/widget?session=" . $sessionId; // Default simulação
 
         if (!empty($apiKey)) {
-            $response = Http::withToken($apiKey)
+            $response = Http::timeout(config('payments.gpo.timeout', 5))
+                ->retry(
+                    config('payments.gpo.retries', 3), 
+                    config('payments.gpo.retry_delay', 100)
+                )
+                ->withToken($apiKey)
                 ->post("{$apiUrl}/sessions", [
                     'amount' => $amount,
                     'reference' => (string) $reservation->id,
@@ -33,7 +42,7 @@ class GpoIframeGateway implements PaymentGatewayInterface
                 $iframeUrl = $response->json('iframe_url') ?? "{$apiUrl}/widget?session={$sessionId}";
             } else {
                 Log::error('Erro GPO: ' . $response->body());
-                throw new \Exception('Erro ao comunicar com a GPO.');
+                throw new \Exception('Gateway de pagamento temporariamente indisponível.');
             }
         }
 
@@ -50,7 +59,7 @@ class GpoIframeGateway implements PaymentGatewayInterface
 
     public function verifyWebhookSignature(array $payload, string $signature): bool
     {
-        $secret = config('services.gpo.secret', '');
+        $secret = config('payments.gpo.webhook_secret', '');
         if (empty($secret)) {
             return true; // Desenvolvimento
         }
@@ -67,16 +76,25 @@ class GpoIframeGateway implements PaymentGatewayInterface
 
     public function checkStatus(PaymentIntent $intent): string
     {
-        $apiUrl = config('services.gpo.url', 'https://api.sandbox.gpo.co.ao');
-        $apiKey = config('services.gpo.key', '');
+        $apiUrl = config('payments.gpo.url');
+        $apiKey = config('payments.gpo.api_key');
 
-        if (empty($apiKey)) return 'pending';
+        if (empty($apiKey) || !config('features.payments.gpo', true)) return 'pending';
 
-        $response = Http::withToken($apiKey)
-            ->get("{$apiUrl}/sessions/{$intent->gateway_reference}/status");
+        try {
+            $response = Http::timeout(config('payments.gpo.timeout', 5))
+                ->retry(
+                    config('payments.gpo.retries', 3), 
+                    config('payments.gpo.retry_delay', 100)
+                )
+                ->withToken($apiKey)
+                ->get("{$apiUrl}/sessions/{$intent->gateway_reference}/status");
 
-        if ($response->successful() && $response->json('status') === 'PAID') {
-            return 'succeeded';
+            if ($response->successful() && $response->json('status') === 'PAID') {
+                return 'succeeded';
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro GPO CheckStatus: ' . $e->getMessage());
         }
 
         return 'pending';

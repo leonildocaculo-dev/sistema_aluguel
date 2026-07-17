@@ -67,6 +67,11 @@ class User extends Authenticatable
         return $this->hasMany(Property::class);
     }
 
+    public function favorites()
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
     public function kycVerification()
     {
         return $this->hasOne(KycVerification::class);

@@ -2,7 +2,7 @@ import { api } from "./api";
 
 export const reservationService = {
   async getUserReservations() {
-    const response = await api.get('/reservations');
+    const response = await api.get('/reservations/me');
     // Assuming backend returns { data: [...] } or just an array
     return response.data.data || response.data;
   },

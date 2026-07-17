@@ -6,8 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { propertyService } from "../../services/propertyService";
 import { HeroSearchBar } from "../../components/search/HeroSearchBar";
 import { PropertyCard } from "../../components/cards/PropertyCard";
-import { Skeleton } from "../../components/ui/Skeleton";
+import { Skeleton } from "../../components/ui/skeleton";
 import { Star, ShieldCheck, MapPin } from "lucide-react";
+import Image from "next/image";
 import { useTranslation } from "../../i18n/useTranslation";
 
 // Dummy data for MVP visual setup
@@ -63,7 +64,19 @@ export function HomeClient() {
     retry: 1
   });
 
+  const [activeProvince, setActiveProvince] = React.useState('Todas');
+
   const displayProperties = properties && properties.length > 0 ? properties : dummyProperties;
+
+  const filteredProperties = React.useMemo(() => {
+    let filtered = displayProperties;
+    if (activeProvince !== 'Todas') {
+      filtered = displayProperties.filter((p: any) => 
+        (p.province || p.location || '').toLowerCase().includes(activeProvince.toLowerCase())
+      );
+    }
+    return filtered.slice(0, 4);
+  }, [displayProperties, activeProvince]);
 
   React.useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -162,8 +175,8 @@ export function HomeClient() {
                 {t('promo.button')}
               </button>
             </div>
-            <div className="flex-1 w-full relative hidden md:block">
-              <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&q=80&w=800" alt="Resort Angola" className="w-full h-80 object-cover rounded-2xl shadow-2xl border-4 border-white/10" />
+            <div className="flex-1 w-full relative hidden md:block overflow-hidden rounded-2xl shadow-2xl border-4 border-white/10 h-80">
+              <Image src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&q=80&w=800" alt="Resort Angola" fill sizes="50vw" className="object-cover" />
             </div>
           </div>
         </div>
@@ -188,11 +201,11 @@ export function HomeClient() {
           
           {/* Tabs for cities */}
           <div className="flex space-x-8 border-b border-border mb-10 overflow-x-auto pb-3 scrollbar-hide text-lg">
-            <button onClick={() => router.push('/pesquisa')} className="text-primary font-bold border-b-2 border-primary pb-3 whitespace-nowrap">{t('featured.allProvinces')}</button>
-            <button onClick={() => router.push('/pesquisa?query=Luanda')} className="text-muted-foreground hover:text-text pb-3 whitespace-nowrap font-medium transition-colors">Luanda</button>
-            <button onClick={() => router.push('/pesquisa?query=Benguela')} className="text-muted-foreground hover:text-text pb-3 whitespace-nowrap font-medium transition-colors">Benguela</button>
-            <button onClick={() => router.push('/pesquisa?query=Huíla')} className="text-muted-foreground hover:text-text pb-3 whitespace-nowrap font-medium transition-colors">Huíla</button>
-            <button onClick={() => router.push('/pesquisa?query=Cabinda')} className="text-muted-foreground hover:text-text pb-3 whitespace-nowrap font-medium transition-colors">Cabinda</button>
+            <button onClick={() => setActiveProvince('Todas')} className={`${activeProvince === 'Todas' ? 'text-primary font-bold border-b-2 border-primary' : 'text-muted-foreground hover:text-text'} pb-3 whitespace-nowrap transition-colors`}>{t('featured.allProvinces')}</button>
+            <button onClick={() => setActiveProvince('Luanda')} className={`${activeProvince === 'Luanda' ? 'text-primary font-bold border-b-2 border-primary' : 'text-muted-foreground hover:text-text'} pb-3 whitespace-nowrap transition-colors`}>Luanda</button>
+            <button onClick={() => setActiveProvince('Benguela')} className={`${activeProvince === 'Benguela' ? 'text-primary font-bold border-b-2 border-primary' : 'text-muted-foreground hover:text-text'} pb-3 whitespace-nowrap transition-colors`}>Benguela</button>
+            <button onClick={() => setActiveProvince('Huíla')} className={`${activeProvince === 'Huíla' ? 'text-primary font-bold border-b-2 border-primary' : 'text-muted-foreground hover:text-text'} pb-3 whitespace-nowrap transition-colors`}>Huíla</button>
+            <button onClick={() => setActiveProvince('Cabinda')} className={`${activeProvince === 'Cabinda' ? 'text-primary font-bold border-b-2 border-primary' : 'text-muted-foreground hover:text-text'} pb-3 whitespace-nowrap transition-colors`}>Cabinda</button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -208,20 +221,30 @@ export function HomeClient() {
                   </div>
                 </div>
               ))
+            ) : filteredProperties.length > 0 ? (
+              filteredProperties.map((prop: any) => {
+                let img = prop.images?.[0]?.path || prop.imageUrl;
+                if (!img || !img.startsWith('http')) {
+                  img = dummyProperties[prop.id % 4]?.imageUrl || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800";
+                }
+                return (
+                  <PropertyCard 
+                    key={prop.id}
+                    id={prop.id}
+                    title={prop.name || prop.title}
+                    location={`${prop.municipality || ''}, ${prop.province || prop.location}`.replace(/^, /, '')}
+                    price={prop.price_per_night || prop.price}
+                    oldPrice={prop.oldPrice}
+                    rating={prop.rating || 4.8}
+                    reviews={prop.reviews || 42}
+                    imageUrl={img}
+                  />
+                );
+              })
             ) : (
-              displayProperties.map((prop: any) => (
-                <PropertyCard 
-                  key={prop.id}
-                  id={prop.id}
-                  title={prop.name || prop.title}
-                  location={`${prop.municipality || ''}, ${prop.province || prop.location}`.replace(/^, /, '')}
-                  price={prop.price_per_night || prop.price}
-                  oldPrice={prop.oldPrice}
-                  rating={prop.rating || 4.8}
-                  reviews={prop.reviews || 42}
-                  imageUrl={prop.images?.[0]?.path || prop.imageUrl || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800"}
-                />
-              ))
+              <div className="col-span-1 sm:col-span-2 lg:col-span-4 text-center py-10">
+                <p className="text-muted-foreground text-lg">Nenhuma propriedade encontrada em {activeProvince}.</p>
+              </div>
             )}
           </div>
         </div>

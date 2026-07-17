@@ -41,4 +41,14 @@ class Property extends Model
     {
         return $this->hasMany(PropertyImage::class);
     }
+
+    public function favoritedBy()
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasManyThrough(Review::class, Accommodation::class);
+    }
 }

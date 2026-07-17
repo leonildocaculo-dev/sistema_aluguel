@@ -13,15 +13,24 @@ class ProxyPayGateway implements PaymentGatewayInterface
 {
     public function createIntent(Reservation $reservation, float $amount): PaymentIntent
     {
-        $apiUrl = config('services.proxypay.url', 'https://api.sandbox.proxypay.co.ao');
-        $apiKey = config('services.proxypay.key', '');
+        if (!config('features.payments.proxypay', true)) {
+            throw new \Exception('O gateway ProxyPay encontra-se temporariamente desativado.');
+        }
+
+        $apiUrl = config('payments.proxypay.url');
+        $apiKey = config('payments.proxypay.api_key');
         
         // Gerar referência de 9 dígitos
         $reference = rand(100000000, 999999999);
         $expiresAt = now()->addHours(2);
 
         if (!empty($apiKey)) {
-            $response = Http::withToken($apiKey)
+            $response = Http::timeout(config('payments.proxypay.timeout', 5))
+                ->retry(
+                    config('payments.proxypay.retries', 3), 
+                    config('payments.proxypay.retry_delay', 100)
+                )
+                ->withToken($apiKey)
                 ->withHeaders(['Accept' => 'application/vnd.proxypay.v2+json'])
                 ->put("{$apiUrl}/references/{$reference}", [
                     'amount' => $amount,
@@ -33,7 +42,7 @@ class ProxyPayGateway implements PaymentGatewayInterface
 
             if ($response->failed()) {
                 Log::error('Erro Proxypay: ' . $response->body());
-                throw new \Exception('Erro ao comunicar com a ProxyPay.');
+                throw new \Exception('Gateway de pagamento temporariamente indisponível.');
             }
         }
 
@@ -49,7 +58,7 @@ class ProxyPayGateway implements PaymentGatewayInterface
 
     public function verifyWebhookSignature(array $payload, string $signature): bool
     {
-        $secret = config('services.proxypay.secret', '');
+        $secret = config('payments.proxypay.webhook_secret', '');
         if (empty($secret)) {
             return true; // Se não houver segredo (desenvolvimento), aceita
         }
@@ -65,19 +74,28 @@ class ProxyPayGateway implements PaymentGatewayInterface
 
     public function checkStatus(PaymentIntent $intent): string
     {
-        $apiUrl = config('services.proxypay.url', 'https://api.sandbox.proxypay.co.ao');
-        $apiKey = config('services.proxypay.key', '');
+        $apiUrl = config('payments.proxypay.url');
+        $apiKey = config('payments.proxypay.api_key');
 
-        if (empty($apiKey)) return 'pending';
+        if (empty($apiKey) || !config('features.payments.proxypay', true)) return 'pending';
 
-        $response = Http::withToken($apiKey)
-            ->withHeaders(['Accept' => 'application/vnd.proxypay.v2+json'])
-            ->get("{$apiUrl}/payments", [
-                'reference' => $intent->gateway_reference
-            ]);
+        try {
+            $response = Http::timeout(config('payments.proxypay.timeout', 5))
+                ->retry(
+                    config('payments.proxypay.retries', 3), 
+                    config('payments.proxypay.retry_delay', 100)
+                )
+                ->withToken($apiKey)
+                ->withHeaders(['Accept' => 'application/vnd.proxypay.v2+json'])
+                ->get("{$apiUrl}/payments", [
+                    'reference' => $intent->gateway_reference
+                ]);
 
-        if ($response->successful() && !empty($response->json('data'))) {
-            return 'succeeded';
+            if ($response->successful() && !empty($response->json('data'))) {
+                return 'succeeded';
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro Proxypay CheckStatus: ' . $e->getMessage());
         }
 
         return 'pending';

@@ -4,11 +4,11 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Menu, User, Globe, ChevronDown, LogOut, LayoutDashboard, X, Check } from "lucide-react"
-import { Button } from "../ui/Button"
+import { Button } from "../ui/button"
 import { useAuthStore } from "../../stores/authStore"
 import { useLanguageStore } from "../../stores/languageStore"
 import { useTranslation } from "../../i18n/useTranslation"
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover"
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuthStore()

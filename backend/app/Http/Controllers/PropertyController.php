@@ -6,12 +6,16 @@ use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Property\StorePropertyRequest;
 
 class PropertyController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Property::with(['images', 'accommodations'])->where('status', 'approved');
+        $query = Property::with(['images', 'accommodations'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->where('status', 'approved');
 
         // Generic text search (Location or Name)
         if ($request->has('query') && !empty($request->input('query'))) {
@@ -59,6 +63,16 @@ class PropertyController extends Controller
             });
         }
 
+        // Amenities filtering (searches in description for now)
+        if ($request->has('amenities') && is_array($request->amenities) && count($request->amenities) > 0) {
+            $amenities = $request->amenities;
+            $query->where(function($q) use ($amenities) {
+                foreach ($amenities as $amenity) {
+                    $q->where('description', 'LIKE', "%{$amenity}%");
+                }
+            });
+        }
+
         // Sorting
         $sort = $request->input('sort', 'recommended');
         if ($sort === 'price_asc') {
@@ -70,8 +84,9 @@ class PropertyController extends Controller
             $query->latest();
         }
 
-        // Paginação obrigatória conforme SKILL.md
-        return response()->json($query->paginate(15));
+        // Paginação
+        $perPage = $request->input('per_page', 15);
+        return response()->json($query->paginate($perPage));
     }
 
     // Proprietário: Listar as suas próprias propriedades
@@ -82,20 +97,8 @@ class PropertyController extends Controller
     }
 
     // Proprietário: Criar propriedade
-    public function store(Request $request)
+    public function store(StorePropertyRequest $request)
     {
-        // Regras base
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'province' => 'required|string',
-            'municipality' => 'required|string',
-            'address' => 'required|string',
-            'price_per_night' => 'required|numeric|min:0',
-            'images' => 'required|array|min:1',
-            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048', // 2MB max, MIME real validado pelo Laravel
-        ]);
-
         DB::beginTransaction();
         try {
             $property = $request->user()->properties()->create([
@@ -133,7 +136,11 @@ class PropertyController extends Controller
     // Cliente/Público: Ver detalhes da propriedade
     public function show($id)
     {
-        $property = Property::with(['images', 'accommodations'])->where('status', 'approved')->findOrFail($id);
+        $property = Property::with(['owner', 'images', 'accommodations.reviews'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->where('status', 'approved')
+            ->findOrFail($id);
         return response()->json($property);
     }
 }

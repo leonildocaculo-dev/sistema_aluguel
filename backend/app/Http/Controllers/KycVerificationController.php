@@ -7,17 +7,14 @@ use App\Mail\KycRejectedMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Kyc\UploadKycRequest;
 
 class KycVerificationController extends Controller
 {
     // PROPRIETÁRIO: Submeter documento
-    public function uploadDocument(Request $request)
+    public function uploadDocument(UploadKycRequest $request)
     {
-        $request->validate([
-            'document_type' => 'required|in:id_card,passport',
-            'document' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
-        ]);
-
         $user = $request->user();
 
         // Se já tem pendente ou aprovado, não permite

@@ -3,9 +3,12 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Star, MapPin, Heart } from "lucide-react"
-import { Card, CardContent } from "../ui/Card"
-import { Button } from "../ui/Button"
+import Image from "next/image"
+import { Card, CardContent } from "../ui/card"
+import { Button } from "../ui/button"
 import { cn } from "../../lib/utils"
+import { useFavoriteStore } from "../../stores/favoriteStore"
+import { useAuthStore } from "../../stores/authStore"
 
 export interface PropertyCardProps {
   id: number
@@ -33,6 +36,30 @@ export function PropertyCard({
   className
 }: PropertyCardProps) {
   const router = useRouter()
+  const { isAuthenticated } = useAuthStore()
+  const { favoriteIds, toggleFavorite } = useFavoriteStore()
+  const [imgSrc, setImgSrc] = React.useState(imageUrl)
+  
+  // Use global store state if initialized, otherwise fallback to prop
+  const isActualFavorite = React.useMemo(() => {
+    if (!isAuthenticated) return false;
+    // If the store is empty but prop is true, it might be before initialization
+    if (favoriteIds.length === 0 && isFavorite) return true;
+    return favoriteIds.includes(id);
+  }, [favoriteIds, id, isAuthenticated, isFavorite]);
+
+  React.useEffect(() => {
+    setImgSrc(imageUrl);
+  }, [imageUrl]);
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    await toggleFavorite(id);
+  };
 
   return (
     <Card 
@@ -40,20 +67,22 @@ export function PropertyCard({
       className={cn("overflow-hidden group cursor-pointer border-border/50 hover:border-primary/30 transition-colors", className)}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        {/* Placeholder logic or Real Image with lazy loading */}
-        <img 
-          src={imageUrl} 
+        {/* Optimized Image with lazy loading */}
+        <Image 
+          src={imgSrc} 
           alt={title} 
-          loading="lazy"
-          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+          fill
+          onError={() => setImgSrc("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800")}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
         
         {/* Favorite Button */}
         <button 
-          onClick={(e) => { e.stopPropagation(); /* favorite logic */ }}
-          className="absolute top-3 right-3 p-2 rounded-full bg-surface/80 hover:bg-surface backdrop-blur-sm transition-colors text-muted-foreground hover:text-danger"
+          onClick={handleFavoriteClick}
+          className="absolute top-3 right-3 p-2 rounded-full bg-surface/80 hover:bg-surface backdrop-blur-sm transition-colors text-muted-foreground hover:text-danger z-10"
         >
-          <Heart className={cn("h-5 w-5", isFavorite && "fill-danger text-danger")} />
+          <Heart className={cn("h-5 w-5", isActualFavorite && "fill-danger text-danger")} />
         </button>
       </div>
 

@@ -6,20 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Search\SearchRequest;
+use App\Http\Requests\Search\GeoSearchRequest;
 
 class SearchController extends Controller
 {
-    public function search(Request $request)
+    public function search(SearchRequest $request)
     {
-        // Validação básica dos parâmetros de pesquisa
-        $request->validate([
-            'province' => 'nullable|string',
-            'municipality' => 'nullable|string',
-            'capacity' => 'nullable|integer|min:1',
-            'check_in' => 'nullable|date|after_or_equal:today',
-            'check_out' => 'nullable|date|after:check_in',
-        ]);
-
         // Construir a query base (só aprovadas e com imagens)
         $query = Property::where('status', 'approved')
             ->with(['images' => function($q) { $q->where('is_primary', true); }]);
@@ -66,15 +59,8 @@ class SearchController extends Controller
         return response()->json($query->paginate(12));
     }
 
-    public function geoSearch(Request $request, \App\Services\GeoSearchService $geoService)
+    public function geoSearch(GeoSearchRequest $request, \App\Services\GeoSearchService $geoService)
     {
-        $request->validate([
-            'minLng' => 'required|numeric',
-            'minLat' => 'required|numeric',
-            'maxLng' => 'required|numeric',
-            'maxLat' => 'required|numeric',
-        ]);
-
         $properties = $geoService->searchByBoundingBox(
             (float) $request->minLng,
             (float) $request->minLat,

@@ -10,27 +10,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
-            'phone' => 'nullable|string|max:20|unique:users,phone',
-            'password' => [
-                'required', 'string', 'min:8', 'confirmed',
-                'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'regex:/[@$!%*#?&]/'
-            ],
-            'role' => 'required|in:client,owner',
-        ], [
-            'email.unique' => 'Este e-mail já existe no sistema.',
-            'phone.unique' => 'Este telefone já existe no sistema.',
-            'password.regex' => 'A palavra-passe deve conter letras maiúsculas, minúsculas, números e símbolos.'
-        ]);
-
         $role = Role::where('name', $request->role)->first();
         if (!$role) {
             return response()->json(['message' => 'Cargo não encontrado.'], 400);
@@ -54,13 +41,8 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-        ]);
-
         $throttleKey = Str::transliterate(Str::lower($request->input('email')).'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
@@ -86,8 +68,8 @@ class AuthController extends Controller
 
         RateLimiter::clear($throttleKey);
 
-        // Delete other tokens for session rotation (only 1 active device)
-        // $user->tokens()->delete();
+        // Invalidate old tokens to enforce single active session (Security Best Practice)
+        $user->tokens()->delete();
         
         $token = $user->createToken('auth_token')->plainTextToken;
 

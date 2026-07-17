@@ -5,20 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Review;
 use App\Models\Reservation;
 use App\Models\Accommodation;
+use App\Models\Accommodation;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Http\Requests\Review\StoreReviewRequest;
 
 class ReviewController extends Controller
 {
     // Cliente: Submeter avaliação
-    public function store(Request $request)
+    public function store(StoreReviewRequest $request)
     {
-        $request->validate([
-            'reservation_id' => 'required|exists:reservations,id',
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string|max:1000',
-        ]);
-
         $reservation = Reservation::where('user_id', $request->user()->id)->findOrFail($request->reservation_id);
 
         // Só pode avaliar se a reserva estiver confirmada e o check_out já tiver passado

@@ -3,9 +3,9 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Search, MapPin, Calendar as CalendarIcon, Users, Minus, Plus } from "lucide-react"
-import { Button } from "../ui/Button"
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover"
-import { Calendar } from "../ui/Calendar"
+import { Button } from "../ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
+import { Calendar } from "../ui/calendar"
 import { useTranslation } from "../../i18n/useTranslation"
 import type { DateRange } from "react-day-picker"
 import { format } from "date-fns"
@@ -36,70 +36,98 @@ export function HeroSearchBar() {
     router.push(`/pesquisa${queryString ? `?${queryString}` : ''}`)
   }
 
-  const formatDateDisplay = () => {
-    if (!dateRange?.from) return t('search.addDates')
-    if (!dateRange.to) return format(dateRange.from, 'dd MMM', { locale: dateLocale })
-    return `${format(dateRange.from, 'dd MMM', { locale: dateLocale })} — ${format(dateRange.to, 'dd MMM', { locale: dateLocale })}`
-  }
-
   const formatGuestDisplay = () => {
     if (totalGuests === 0) return t('search.addGuests')
     return `${totalGuests} ${totalGuests === 1 ? t('search.guest') : t('search.guestsLabel')}`
   }
 
+  const ANGOLA_PROVINCES = [
+    'Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cuando Cubango', 
+    'Cuanza Norte', 'Cuanza Sul', 'Cunene', 'Huambo', 'Huíla', 
+    'Luanda', 'Lunda Norte', 'Lunda Sul', 'Malanje', 'Moxico', 
+    'Namibe', 'Uíge', 'Zaire'
+  ]
+
+  const [showSuggestions, setShowSuggestions] = React.useState(false)
+  const [suggestions, setSuggestions] = React.useState<string[]>([])
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setLocation(val)
+    if (val.trim().length > 0) {
+      const filtered = ANGOLA_PROVINCES.filter(p => 
+        p.toLowerCase().includes(val.toLowerCase())
+      )
+      setSuggestions(filtered)
+      setShowSuggestions(true)
+    } else {
+      setShowSuggestions(false)
+    }
+  }
+
+  const selectSuggestion = (prov: string) => {
+    setLocation(prov)
+    setShowSuggestions(false)
+  }
+
+  // Ref to close suggestions when clicking outside
+  const locationRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationRef.current && !locationRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
   return (
     <div className="w-full max-w-5xl mx-auto bg-surface rounded-3xl md:rounded-full shadow-2xl border border-border/60 p-3 md:p-4 flex flex-col md:flex-row items-stretch gap-3 md:gap-0 backdrop-blur-md">
       
       {/* Location Input */}
-      <div className="w-full md:w-[32%] flex items-center px-4 py-3 hover:bg-muted/60 rounded-2xl md:rounded-full transition-all group cursor-pointer border-b md:border-b-0 md:border-r border-border pb-4 md:pb-3 mb-2 md:mb-0">
+      <div ref={locationRef} className="relative w-full md:w-[50%] flex items-center px-4 py-3 hover:bg-muted/60 rounded-2xl md:rounded-full transition-all group cursor-pointer border-b md:border-b-0 md:border-r border-border pb-4 md:pb-3 mb-2 md:mb-0">
         <MapPin className="h-6 w-6 text-primary/80 mr-4 flex-shrink-0 group-hover:text-primary transition-colors" />
         <div className="flex flex-col w-full items-start">
           <span className="text-sm font-bold text-text text-left mb-0.5">{t('search.location')}</span>
           <input 
             type="text" 
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            onChange={handleLocationChange}
+            onFocus={() => {
+              if (location.trim().length > 0) setShowSuggestions(true)
+            }}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder={t('search.locationPlaceholder')}
             className="w-full bg-transparent outline-none text-base text-text placeholder:text-muted-foreground font-medium truncate"
           />
         </div>
+        
+        {/* Autocomplete Dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute top-full left-0 mt-2 w-full bg-surface border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+            <ul className="max-h-60 overflow-y-auto">
+              {suggestions.map((prov, idx) => (
+                <li 
+                  key={idx} 
+                  onClick={() => selectSuggestion(prov)}
+                  className="px-4 py-3 hover:bg-muted cursor-pointer text-text text-sm flex items-center transition-colors"
+                >
+                  <MapPin className="h-4 w-4 text-muted-foreground mr-3" />
+                  {prov}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
-      {/* Date Picker (Check-in / Check-out) */}
-      <Popover open={dateOpen} onOpenChange={setDateOpen}>
-        <PopoverTrigger asChild>
-          <div className="w-full md:w-[32%] flex items-center px-4 py-3 hover:bg-muted/60 rounded-2xl md:rounded-full transition-all group cursor-pointer border-b md:border-b-0 md:border-r border-border pb-4 md:pb-3 mb-2 md:mb-0">
-            <CalendarIcon className="h-6 w-6 text-primary/80 mr-4 flex-shrink-0 group-hover:text-primary transition-colors" />
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-bold text-text text-left mb-0.5">{t('search.dates')}</span>
-              <span className={`text-base ${dateRange?.from ? 'text-text font-semibold' : 'text-muted-foreground font-medium'}`}>
-                {formatDateDisplay()}
-              </span>
-            </div>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="range"
-            selected={dateRange}
-            onSelect={(range) => {
-              setDateRange(range)
-              if (range?.from && range?.to) {
-                setTimeout(() => setDateOpen(false), 300)
-              }
-            }}
-            numberOfMonths={2}
-            disabled={{ before: new Date() }}
-            locale={dateLocale}
-          />
-        </PopoverContent>
-      </Popover>
+
 
       {/* Guests Selector */}
       <Popover open={guestOpen} onOpenChange={setGuestOpen}>
         <PopoverTrigger asChild>
-          <div className="w-full md:w-[26%] flex items-center justify-between px-4 py-3 hover:bg-muted/60 rounded-2xl md:rounded-full transition-all group cursor-pointer">
+          <div className="w-full md:w-[50%] flex items-center justify-between px-4 py-3 hover:bg-muted/60 rounded-2xl md:rounded-full transition-all group cursor-pointer">
             <div className="flex items-center">
               <Users className="h-6 w-6 text-primary/80 mr-4 flex-shrink-0 group-hover:text-primary transition-colors" />
               <div className="flex flex-col items-start">

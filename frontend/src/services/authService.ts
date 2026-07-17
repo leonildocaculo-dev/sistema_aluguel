@@ -43,7 +43,7 @@ export const authService = {
   },
 
   async getUser() {
-    const response = await api.get('/user')
+    const response = await api.get('/me')
     return response.data
   }
 }

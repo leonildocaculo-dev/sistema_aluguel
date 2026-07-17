@@ -15,30 +15,35 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         $this->call([
             RoleSeeder::class,
             AngolaDataSeeder::class,
-            ShortStaySeeder::class,
         ]);
 
         User::factory()->create([
-            'name' => 'Test Admin',
+            'name' => 'Admin AngolaStay',
             'email' => 'admin@angolastay.com',
             'password' => 'password',
             'role_id' => 1, // Admin role
         ]);
 
         User::factory()->create([
-            'name' => 'Test Owner',
+            'name' => 'Proprietário AngolaStay',
             'email' => 'owner@angolastay.com',
             'password' => 'password',
             'role_id' => 2, // Owner role
         ]);
 
-        $this->call([
-            PropertyMatrixSeeder::class,
+        User::factory()->create([
+            'name' => 'Cliente AngolaStay',
+            'email' => 'client@angolastay.com',
+            'password' => 'password',
+            'role_id' => 3, // Client role
         ]);
+
+        // $this->call([
+        //     ShortStaySeeder::class,
+        //     PropertyMatrixSeeder::class,
+        // ]);
     }
 }

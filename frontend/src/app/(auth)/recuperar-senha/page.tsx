@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Button } from "../../../components/ui/Button";
-import { Input } from "../../../components/ui/Input";
-import { Label } from "../../../components/ui/Label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../../../components/ui/Card";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../../../components/ui/card";
 import { forgotPasswordSchema } from "../../../schemas/auth";
 import type { ForgotPasswordFormValues } from "../../../schemas/auth";
 

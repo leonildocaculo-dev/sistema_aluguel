@@ -10,12 +10,16 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\AdminPropertyController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\KycVerificationController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\OwnerMiddleware;
 
-Route::post('/webhooks/payment/{gateway}', [WebhookController::class, 'handle'])->name('webhooks.payment');
-Route::post('/webhooks/mock', [WebhookController::class, 'mock']);
+Route::middleware(['throttle:webhooks', 'ip.whitelist'])->group(function () {
+    Route::post('/webhooks/payment/{gateway}', [WebhookController::class, 'handle'])->name('webhooks.payment');
+});
+
+Route::post('/webhooks/mock', [WebhookController::class, 'mock'])->middleware('throttle:webhooks');
 
 Route::middleware('throttle:auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -38,16 +42,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/deactivate', [\App\Http\Controllers\Api\PrivacyController::class, 'deactivateAccount']);
     
     // Rotas de KYC do Proprietário
-    Route::post('/kyc/upload', [KycVerificationController::class, 'uploadDocument']);
+    Route::post('/kyc/upload', [KycVerificationController::class, 'uploadDocument'])->middleware('throttle:uploads');
     Route::get('/kyc/status', [KycVerificationController::class, 'checkStatus']);
 
     // Cliente
     Route::post('/reviews', [\App\Http\Controllers\ReviewController::class, 'store']);
     Route::get('/reservations/me', [ReservationController::class, 'myReservations']);
+    Route::get('/reservations/{id}', [ReservationController::class, 'show']);
     Route::get('/reservations/{id}/status', [ReservationController::class, 'status']);
-    Route::post('/reservations', [ReservationController::class, 'store']);
+    Route::post('/reservations', [ReservationController::class, 'store'])
+         ->middleware('throttle:uploads');
     Route::post('/reservations/{id}/comprovativo', [PaymentController::class, 'uploadComprovativo'])
-         ->middleware('throttle:10,1'); // Limit uploads to 10 per minute per user to prevent storage exhaustion
+         ->middleware('throttle:uploads'); // Limit uploads to 10 per minute per user to prevent storage exhaustion
+
+    // Favoritos
+    Route::get('/favorites', [FavoriteController::class, 'index']);
+    Route::get('/favorites/ids', [FavoriteController::class, 'listIds']);
+    Route::post('/favorites/{id}/toggle', [FavoriteController::class, 'toggle']);
 
     // Proprietário
     Route::middleware(OwnerMiddleware::class)->group(function () {
@@ -70,5 +81,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/kyc/{id}/reject', [KycVerificationController::class, 'rejectKyc']);
         
         Route::get('/admin/logs', [\App\Http\Controllers\Api\AuditLogController::class, 'index']);
+        
+        // Users CRUD
+        Route::get('/admin/users', [\App\Http\Controllers\Api\Admin\AdminUserController::class, 'index']);
+        Route::put('/admin/users/{id}', [\App\Http\Controllers\Api\Admin\AdminUserController::class, 'update']);
+        Route::post('/admin/users/{id}/toggle-status', [\App\Http\Controllers\Api\Admin\AdminUserController::class, 'toggleStatus']);
+
+        // Settings & System
+        Route::get('/admin/settings', [\App\Http\Controllers\Api\Admin\AdminSettingsController::class, 'index']);
+        Route::put('/admin/settings', [\App\Http\Controllers\Api\Admin\AdminSettingsController::class, 'update']);
+        Route::get('/admin/system/features', [\App\Http\Controllers\Api\Admin\FeatureFlagController::class, 'index']);
     });
 });

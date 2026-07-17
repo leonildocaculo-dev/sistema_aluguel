@@ -55,6 +55,9 @@ class PaymentWebhookService
 
             if ($intent && $intent->status !== 'succeeded') {
                 $intent->update(['status' => 'succeeded']);
+                // Gerar Fatura/Recibo Automaticamente
+                $invoiceService = app(\App\Services\InvoiceService::class);
+                $invoiceService->generateForReservation($intent->reservation, $intent->amount);
                 
                 // Disparar Evento
                 event(new PaymentConfirmed($intent));
